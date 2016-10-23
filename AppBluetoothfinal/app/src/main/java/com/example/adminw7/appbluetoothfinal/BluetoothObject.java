@@ -202,6 +202,7 @@ public class BluetoothObject  implements Parcelable
                 bluetoothObject.setMeuDivece(meuDivece);
                 bluetoothObject.setMeuSocket(meuSocket);
                 Toast.makeText(context, "Conectado con: " + direccionMac, Toast.LENGTH_LONG).show();
+                return true;
             } catch (IOException error){
                 bluetoothObject.setConnected(false);
                 Toast.makeText(context, "Ocurrio un error: " + error, Toast.LENGTH_LONG).show();
