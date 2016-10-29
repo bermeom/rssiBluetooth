@@ -8,9 +8,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:layout_width="wrap_content"
-        android:layout_weight="0.29">
+
+        android:layout_width="160dp">
 
         <TextView
             android:id="@+id/textview_bt_name"
@@ -64,44 +63,49 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:layout_width="wrap_content"
-        android:layout_weight="1.00">
+
+        android:layout_width="130dp"
+        android:layout_weight="0.57">
         <LinearLayout
             android:orientation="horizontal"
             android:layout_height="match_parent"
-            android:padding="10dp"
             android:layout_width="match_parent">
             <ToggleButton
-                android:text="ToggleButton"
-                android:layout_width="55dp"
+                android:text="ALERTA"
+                android:textOff="@string/alerta"
+                android:textOn="@string/alertaN"
+
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
-                android:id="@+id/toggleButton" />
+                android:id="@+id/alert_button"
+                />
 
             <ToggleButton
-                android:text="ToggleButton"
-                android:layout_width="54dp"
+                android:text="NORMAL"
+                android:textOff="@string/normal"
+                android:textOn="@string/normalN"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
-                android:id="@+id/toggleButton2" />
+                android:id="@+id/normal_button" />
 
             <ToggleButton
-                android:text="ToggleButton"
-                android:layout_width="wrap_content"
+                android:text="BAJO"
+                android:textOff="@string/bajo"
+                android:textOn="@string/bajoN"
+                android:layout_width="40dp"
                 android:layout_height="wrap_content"
-                android:id="@+id/toggleButton3"
-                android:layout_weight="1" />
+                android:id="@+id/low_button"
+                 />
         </LinearLayout>
 
 
         <Button
-            android:text="Conectar"
-
+            android:text="CONECTAR"
             android:layout_height="wrap_content"
             android:id="@+id/button"
-            style="@style/Widget.AppCompat.Button.Small"
-            android:layout_gravity="center_vertical"
+
             android:layout_width="wrap_content"
-            android:elevation="0dp" />
+            android:textSize="12.5sp" />
 
     </LinearLayout>
 

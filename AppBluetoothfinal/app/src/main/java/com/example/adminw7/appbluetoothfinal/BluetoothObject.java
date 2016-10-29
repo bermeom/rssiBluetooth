@@ -10,6 +10,7 @@ import android.os.Parcelable;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.UUID;
 
 /**
@@ -30,6 +31,20 @@ public class BluetoothObject  implements Parcelable
     private int bluetooth_rssi;
     private boolean connected;
     private UUID MI_UUID = UUID.fromString("0001101-0000-1000-8000-00805f9b34fb");
+    private int state;//0 none, 1 normal, 2 alter , 3 low
+
+    // Parcelable stuff
+    public BluetoothObject()
+    {
+        this.connected=false;
+        this.state=0;
+    }  //empty constructor
+
+    public BluetoothObject(Parcel in)
+    {
+        super();
+        readFromParcel(in);
+    }
 
     public String getBluetooth_name() {
         return bluetooth_name;
@@ -79,16 +94,28 @@ public class BluetoothObject  implements Parcelable
         this.bluetooth_rssi = bluetooth_rssi;
     }
 
-    // Parcelable stuff
-    public BluetoothObject()
-    {
-        this.connected=false;
-    }  //empty constructor
+    public boolean sendData(String data,Context context) {
+            if(isConnected()){
+                try{
+                    OutputStream outputStream=meuSocket.getOutputStream();
+                    byte [] toSend=data.getBytes();
+                    outputStream.write(toSend);
+                    outputStream.flush();
+                    return true;
+                } catch (IOException error){
+                    Toast.makeText(context, "Ocurrio un error enviando: " + error, Toast.LENGTH_LONG).show();
+                }
 
-    public BluetoothObject(Parcel in)
-    {
-        super();
-        readFromParcel(in);
+            }
+        return false;
+    }
+
+    public int getState() {
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 
     public static int getSolicitaAtivacion() {
