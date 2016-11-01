@@ -2,11 +2,18 @@ package com.example.adminw7.appbluetoothfinal;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.ParcelUuid;
 import android.os.Parcelable;
+import android.support.annotation.RequiresApi;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -19,31 +26,77 @@ import java.util.UUID;
 
 public class BluetoothObject  implements Parcelable
 {
-    private static final int SOLICITA_ATIVACION = 1;
-    private static final int SOLICITA_CONEXION = 2;
-    private BluetoothDevice meuDivece = null;
-    private BluetoothSocket meuSocket = null;
-    private String bluetooth_name;
-    private String bluetooth_address;
-    private int bluetooth_state;
-    private int bluetooth_type;
-    private ParcelUuid[] bluetooth_uuids;
-    private int bluetooth_rssi;
-    private boolean connected;
-    private UUID MI_UUID = UUID.fromString("0001101-0000-1000-8000-00805f9b34fb");
-    private int state;//0 none, 1 normal, 2 alter , 3 low
+
+    private final static String TAG = BluetoothObject.class.getSimpleName();
+    protected static final int SOLICITA_ATIVACION = 1;
+    protected static final int SOLICITA_CONEXION = 2;
+    protected BluetoothDevice meuDivece = null;
+    protected BluetoothSocket meuSocket = null;
+    protected String bluetooth_name;
+    protected String bluetooth_address;
+    protected int bluetooth_state;
+    protected int bluetooth_type;
+    protected ParcelUuid[] bluetooth_uuids;
+    protected int bluetooth_rssi;
+    protected boolean connected;
+    protected UUID MI_UUID = UUID.fromString("0001101-0000-1000-8000-00805f9b34fb");
+    protected int state;//0 none, 1 normal, 2 alter , 3 low
+
+    protected BluetoothGattCallback gattCallback;
+    protected BluetoothGatt bluetoothGatt;
 
     // Parcelable stuff
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public BluetoothObject()
     {
         this.connected=false;
         this.state=0;
+        this.gattCallback = new BluetoothGattCallback() {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status,int newState) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.i(TAG, "Connected to GATT server.");
+                      } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                        Log.i(TAG, "Disconnected from GATT server.");
+                        //broadcastUpdate(intentAction);
+                    }
+                }
+
+                @Override
+                // New services discovered
+                public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        //broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
+                        Log.w(TAG, "ACTION_GATT_SERVICES_DISCOVERED " + status);
+                    } else {
+                        Log.w(TAG, "onServicesDiscovered received: " + status);
+                    }
+                }
+
+                @Override
+                // Result of a characteristic read operation
+                public void onCharacteristicRead(BluetoothGatt gatt,
+                                                 BluetoothGattCharacteristic characteristic,
+                                                 int status) {
+
+                }
+
+        };
+
     }  //empty constructor
 
     public BluetoothObject(Parcel in)
     {
         super();
         readFromParcel(in);
+    }
+
+    public BluetoothGatt getBluetoothGatt() {
+        return bluetoothGatt;
+    }
+
+    public void setBluetoothGatt(BluetoothGatt bluetoothGatt) {
+        this.bluetoothGatt = bluetoothGatt;
     }
 
     public String getBluetooth_name() {
@@ -108,6 +161,14 @@ public class BluetoothObject  implements Parcelable
 
             }
         return false;
+    }
+
+    public BluetoothGattCallback getGattCallback() {
+        return gattCallback;
+    }
+
+    public void setGattCallback(BluetoothGattCallback gattCallback) {
+        this.gattCallback = gattCallback;
     }
 
     public int getState() {
@@ -209,14 +270,18 @@ public class BluetoothObject  implements Parcelable
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static boolean connectDevice(Context context, BluetoothObject bluetoothObject){
 
         if (!bluetoothObject.isConnected()){
             String direccionMac =bluetoothObject.getBluetooth_address();
-            BluetoothAdapter meuBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            BluetoothAdapter meuBluetoothAdapter = MainActivity.mBluetoothAdapter;
             BluetoothDevice meuDivece = meuBluetoothAdapter.getRemoteDevice(direccionMac);
             BluetoothSocket meuSocket;
             try {
+
+
+                bluetoothObject.setBluetoothGatt(meuDivece.connectGatt(context, false, bluetoothObject.gattCallback));
                 ParcelUuid uuid[] = bluetoothObject.getBluetooth_uuids();
                 if (uuid != null) {
                     meuSocket = meuDivece.createRfcommSocketToServiceRecord(uuid[0].getUuid());
@@ -230,11 +295,12 @@ public class BluetoothObject  implements Parcelable
                 bluetoothObject.setMeuSocket(meuSocket);
                 Toast.makeText(context, "Conectado con: " + direccionMac, Toast.LENGTH_LONG).show();
                 return true;
+
             } catch (IOException error){
                 bluetoothObject.setConnected(false);
                 Toast.makeText(context, "Ocurrio un error: " + error, Toast.LENGTH_LONG).show();
             }
-
+                //*/
         }
         return false;
 
