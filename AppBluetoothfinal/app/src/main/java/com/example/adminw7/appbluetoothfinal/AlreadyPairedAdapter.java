@@ -1,7 +1,10 @@
 package com.example.adminw7.appbluetoothfinal;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.ParcelUuid;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +16,8 @@ import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.logging.Handler;
 
 /**
  * Created by TG1619 on 23/10/2016.
@@ -21,12 +26,12 @@ import java.util.ArrayList;
 public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
 {
     private Context context;
+    private AppCompatActivity activity;
     private ArrayList<BluetoothObject> arrayOfAlreadyPairedDevices;
 
     public AlreadyPairedAdapter(Context context, ArrayList<BluetoothObject> arrayOfAlreadyPairedDevices)
     {
         super(context, R.layout.row_bt, arrayOfAlreadyPairedDevices);
-
         this.context = context;
         this.arrayOfAlreadyPairedDevices = arrayOfAlreadyPairedDevices;
     }
@@ -48,59 +53,88 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         TextView bt_bondState = (TextView) rowView.findViewById(R.id.textview_bt_state);
         TextView bt_type = (TextView) rowView.findViewById(R.id.textview_bt_type);
         TextView bt_uuid = (TextView) rowView.findViewById(R.id.textview_bt_uuid);
-        TextView bt_signal_strength = (TextView) rowView.findViewById(R.id.textview_bt_signal_strength);
+        final TextView bt_signal_strength = (TextView) rowView.findViewById(R.id.textview_bt_signal_strength);
         final Button connectButton = (Button) rowView.findViewById(R.id.button);
         final ToggleButton normalToggleButton= (ToggleButton) rowView.findViewById(R.id.normal_button);
         final ToggleButton alertToggleButton= (ToggleButton) rowView.findViewById(R.id.alert_button);
         final ToggleButton lowToggleButton= (ToggleButton) rowView.findViewById(R.id.low_button);
+        final Runnable rssiCallBack=new Runnable() {
+            @Override
+            public void run() {
+                bt_signal_strength.setText("RSSI: " + bluetoothObject.getBluetooth_rssi() + "dbm");
+            }
+
+        };
+        bluetoothObject.setRssiUpadateCallback(rssiCallBack);
         connectButton.setOnClickListener(new View.OnClickListener()
         {
-            //BluetoothObject bObject=bluetoothObject;
-            //View rowViewB=rowView;
+            //private final Handler handler= new Handler(context.getMainLooper());
             @Override
             public void onClick(View v)
             {
-
                 //Toast.makeText(context, "Connect"+bObject.getBluetooth_name()+ " "+bObject.getBluetooth_address(), Toast.LENGTH_SHORT).show();
                 if(bluetoothObject.isConnected()){
                     try {
-                        bluetoothObject.getMeuSocket().close();
-                        bluetoothObject.setConnected(false);
-                        connectButton.setText("CONECTAR");
-                        switch (bluetoothObject.getState()){
-                            case (1):
-                                normalToggleButton.setChecked(false);
-                                normalToggleButton.setEnabled(true);
-                                break;
-                            case (2):
-                                alertToggleButton.setChecked(false);
-                                alertToggleButton.setEnabled(true);
-                                break;
-                            case (3):
-                                lowToggleButton.setChecked(false);
-                                lowToggleButton.setEnabled(true);
-                                break;
+
+                        BluetoothEnumerationObject result=bluetoothObject.disconnectDevice(context);
+                        if(result==BluetoothEnumerationObject.DISCONNECTED) {
+                            connectButton.setText("CONECTAR");
+                            switch (bluetoothObject.getState()) {
+                                case (1):
+                                    normalToggleButton.setChecked(false);
+                                    normalToggleButton.setEnabled(true);
+                                    break;
+                                case (2):
+                                    alertToggleButton.setChecked(false);
+                                    alertToggleButton.setEnabled(true);
+                                    break;
+                                case (3):
+                                    lowToggleButton.setChecked(false);
+                                    lowToggleButton.setEnabled(true);
+                                    break;
+                            }
+                            bluetoothObject.setState(0);
                         }
-                        bluetoothObject.setState(0);
                         //Toast.makeText(context, "Bluetotth desconectado: ", Toast.LENGTH_LONG).show();
                     }catch (IOException error){
                         Toast.makeText(context, "Ocurrio un error: " + error, Toast.LENGTH_LONG).show();
                     }
                 }else{
-                    if(BluetoothObject.connectDevice(context,bluetoothObject)){
-                        connectButton.setText("DESCONECTAR");
-                        bluetoothObject.sendData("NORMAL-ON",context);
-                        normalToggleButton.setEnabled(false);
-                        alertToggleButton.setEnabled(true);
-                        alertToggleButton.setChecked(false);
-                        lowToggleButton.setEnabled(true);
-                        lowToggleButton.setChecked(false);
-                        bluetoothObject.setState(1);
-                        Toast.makeText(context, "Connectado "+bluetoothObject.getBluetooth_name(), Toast.LENGTH_SHORT).show();
+
+                    BluetoothEnumerationObject result=bluetoothObject.connectDevice(context,
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                if(bluetoothObject.isConnected()) {
+                                    try {
+                                            connectButton.setText("DESCONECTAR");
+                                            normalToggleButton.setChecked(true);
+                                            normalToggleButton.setEnabled(false);
+                                            alertToggleButton.setEnabled(true);
+                                            alertToggleButton.setChecked(false);
+                                            lowToggleButton.setEnabled(true);
+                                            lowToggleButton.setChecked(false);
+                                    }catch (Exception  e){
+                                        Log.d("Button", "ERROR -> "+e);
+                                    }
+                                    boolean replay =bluetoothObject.sendData("NORMAL-ON", context);
+                                    bluetoothObject.setState(1);
+                                    Toast.makeText(context, "Connectado " + bluetoothObject.getBluetooth_name(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                    },rssiCallBack);
+
+
+                    if(result==BluetoothEnumerationObject.CONNECTING) {
+                        connectButton.setText("CONECTANDO..");
                     }
-                }
+                    }
                 //*/
             }
+
+
+
+
         });
 
         normalToggleButton.setOnClickListener(new View.OnClickListener()

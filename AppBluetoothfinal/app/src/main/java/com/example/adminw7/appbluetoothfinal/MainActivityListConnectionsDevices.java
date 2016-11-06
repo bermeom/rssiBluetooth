@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.view.menu.MenuView;
@@ -27,6 +29,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
+import android.os.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 
 public class MainActivityListConnectionsDevices extends AppCompatActivity {
@@ -35,6 +40,8 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
     private ListView listview;
     private boolean isScan ;
     BroadcastReceiver mReceiver;
+    private  Handler handler;
+    private  Runnable runnableCode;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +50,24 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         listview = (ListView) findViewById(R.id.listConnectionsDevices);
         setListAdapter();
+
+        // Create the Handler object (on the main thread by default)
+        handler = new Handler();
+        // Define the code block to be executed
+        runnableCode = new Runnable() {
+            @Override
+            public void run() {
+                // Do something here on the main thread
+                for(Map.Entry<String,BluetoothObject> entry: MainActivity.mapBTDevices.entrySet()){
+                    if(entry.getValue().isConnected()){
+                        entry.getValue().updateRSSI();
+                    }
+                }
+                handler.postDelayed(this, MainActivity.delayMillis);
+            }
+        };
+        // Run the above code block on the main thread after 2 seconds
+        handler.postDelayed(runnableCode, MainActivity.delayMillis);
 
     }
 
@@ -80,8 +105,9 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
         for(Map.Entry<String,BluetoothObject> entry:MainActivity.mapBTDevices.entrySet()){
             arrayOfPairedDevices.add(entry.getValue());
         }
+        //AppCompatActivity activity = (AppCompatActivity) getApplicationContext();
         // 1. Pass context and data to the custom adapter
-        AlreadyPairedAdapter myAdapter = new AlreadyPairedAdapter(getApplicationContext(), arrayOfPairedDevices);
+        AlreadyPairedAdapter myAdapter = new AlreadyPairedAdapter(MainActivityListConnectionsDevices.this, arrayOfPairedDevices);
 
         // 2. setListAdapter
 
@@ -96,11 +122,10 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
 
         // start looking for bluetooth devices
         mBluetoothAdapter.startDiscovery();
-
-        // Discover new devices
         // Create a BroadcastReceiver for ACTION_FOUND
         mReceiver = new BroadcastReceiver()
         {
+            @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
             @Override
             public void onReceive(Context context, Intent intent)
             {
@@ -116,7 +141,12 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
                     int rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
 
                     // Create the device object and add it to the arrayList of devices
-                    BluetoothObject bluetoothObject = new BluetoothObject();
+                    BluetoothObject bluetoothObject;
+                    if(device.getType()==2){
+                        bluetoothObject = new BluetoothLEObject();
+                    }else {
+                        bluetoothObject = new BluetoothObject();
+                    }
                     if(MainActivity.mapBTDevices.containsKey(device.getAddress())){
                         bluetoothObject=MainActivity.mapBTDevices.get(device.getAddress());
                     }
@@ -136,10 +166,45 @@ public class MainActivityListConnectionsDevices extends AppCompatActivity {
                 }
             }
         };
-        // Register the BroadcastReceiver
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(mReceiver, filter);
+        try {
+            // Register the BroadcastReceiver
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            registerReceiver(mReceiver, filter);
+        }catch (Exception e){
+            Log.d("MAListConnectionsDevice", "ERROR ->" +e);
+        }
+
     }
 
 
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopRepeatingTask();
+        for(Map.Entry<String,BluetoothObject> entry: MainActivity.mapBTDevices.entrySet()){
+                if(entry.getValue().isConnected()){
+                    try {
+                        entry.getValue().disconnectDevice(MainActivityListConnectionsDevices.this);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+        }
+        try {
+            if(mReceiver!=null) {
+                unregisterReceiver(mReceiver);
+                //mReceiver.abortBroadcast();
+                //mReceiver.clearAbortBroadcast();
+
+            }
+        }catch (Exception e){
+            Log.d("MAListConnectionsDevice", "ERROR ->" +e);
+        }
+    }
+
+
+    void stopRepeatingTask() {
+        handler.removeCallbacks(runnableCode);
+    }
 }

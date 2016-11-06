@@ -29,12 +29,13 @@ public class MainActivity extends AppCompatActivity {
 
     public static BluetoothAdapter mBluetoothAdapter;
     public static Map<String, BluetoothObject> mapBTDevices;
+    public static int delayMillis=2000;
     private final static int REQUEST_ENABLE_BT = 1;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
-    private GoogleApiClient client;
+
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     @Override
@@ -62,18 +63,35 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
     }
 
-    public void OnClickListenerListConnectionsDevices(View view) {
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void OnClickListenerModo1(View view) {
         //Toast.makeText(getApplicationContext(), "que onda", Toast.LENGTH_LONG).show();
         getArrayOfAlreadyPairedBluetoothDevices();
+        MainActivity.delayMillis=2000;
+        Intent intent = new Intent(this, MainActivityListConnectionsDevices.class);
+        startActivity(intent);
+    }
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void OnClickListenerModo2(View view) {
+        //Toast.makeText(getApplicationContext(), "que onda", Toast.LENGTH_LONG).show();
+        getArrayOfAlreadyPairedBluetoothDevices();
+        MainActivity.delayMillis=2000;
+        Intent intent = new Intent(this, MainActivityListConnectionsDevices.class);
+        startActivity(intent);
+    }
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void OnClickListenerModo3(View view) {
+        //Toast.makeText(getApplicationContext(), "que onda", Toast.LENGTH_LONG).show();
+        getArrayOfAlreadyPairedBluetoothDevices();
+        MainActivity.delayMillis=1000;
         Intent intent = new Intent(this, MainActivityListConnectionsDevices.class);
         startActivity(intent);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     private void getArrayOfAlreadyPairedBluetoothDevices() {
 
         // Query paired devices
@@ -85,7 +103,12 @@ public class MainActivity extends AppCompatActivity {
             for (BluetoothDevice device : pairedDevices) {
 
                 // Create the device object and add it to the arrayList of devices
-                BluetoothObject bluetoothObject = new BluetoothObject();
+                BluetoothObject bluetoothObject;
+                if(device.getType()==2){
+                    bluetoothObject = new BluetoothLEObject();
+                }else {
+                    bluetoothObject = new BluetoothObject();
+                }
                 if (MainActivity.mapBTDevices.containsKey(device.getAddress())) {
                     bluetoothObject = MainActivity.mapBTDevices.get(device.getAddress());
                 }
@@ -102,39 +125,5 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    public Action getIndexApiAction() {
-        Thing object = new Thing.Builder()
-                .setName("Main Page") // TODO: Define a title for the content shown.
-                // TODO: Make sure this auto-generated URL is correct.
-                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
-                .build();
-        return new Action.Builder(Action.TYPE_VIEW)
-                .setObject(object)
-                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
-                .build();
-    }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
-        AppIndex.AppIndexApi.start(client, getIndexApiAction());
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        AppIndex.AppIndexApi.end(client, getIndexApiAction());
-        client.disconnect();
-    }
 }
