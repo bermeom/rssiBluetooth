@@ -39,7 +39,10 @@ public class BluetoothObject  implements Parcelable {
     protected String bluetooth_address;
     protected int bluetooth_type;
     protected ParcelUuid[] bluetooth_uuids;
-    protected int bluetooth_rssi;
+    protected int bluetooth_rssi[];
+    protected int samples_rssi;
+    protected boolean sw;
+    protected float average_rssi;
     protected UUID MI_UUID = UUID.fromString("0001101-0000-1000-8000-00805f9b34fb");
     protected int state;//0 none, 1 normal, 2 alter , 3 low
     protected Context context;
@@ -50,8 +53,10 @@ public class BluetoothObject  implements Parcelable {
     {
         this.state=0;
         this.connection_state=BluetoothEnumerationObject.DISCONNECTED;
-
-
+        this.bluetooth_rssi=new int[10];
+        this.samples_rssi=0;
+        this.average_rssi=0;
+        this.sw=false;
     }  //empty constructor
 
     public BluetoothObject(Parcel in)
@@ -125,21 +130,44 @@ public class BluetoothObject  implements Parcelable {
     }
 
     public int getBluetooth_rssi() {
-        return bluetooth_rssi;
+        if(this.samples_rssi<=0){
+            return 0;
+        }
+        return bluetooth_rssi[this.samples_rssi-1];
     }
 
     public void setBluetooth_rssi(int bluetooth_rssi) {
-        this.bluetooth_rssi = bluetooth_rssi;
+        if(this.samples_rssi>=10){
+            this.samples_rssi=0;
+            this.sw=true;
+        }else{
+            this.samples_rssi++;
+        }
+        this.bluetooth_rssi[this.samples_rssi] = bluetooth_rssi;
+        this.average_rssi=0;
+        for (int i=0;i<((!sw)?this.samples_rssi:10);i++){
+                this.average_rssi+=this.bluetooth_rssi[i];
+        }
+        this.average_rssi=(this.average_rssi)/((!sw)?this.samples_rssi:10);
         if(!(context==null || rssiUpadateCallback==null)){
             try {
                 ((Activity)context).runOnUiThread(rssiUpadateCallback);
+
             }catch (Exception e){
                 Log.i(TAG, "Error -> "+e);
             }
         }
     }
 
-    public boolean sendData(String data,Context context) {
+    public float getAverage_rssi() {
+        return average_rssi;
+    }
+
+    public void setAverage_rssi(float average_rssi) {
+        this.average_rssi = average_rssi;
+    }
+
+    public boolean sendData(String data, Context context) {
             if(isConnected()){
                 try{
                     OutputStream outputStream=meuSocket.getOutputStream();
@@ -208,7 +236,6 @@ public class BluetoothObject  implements Parcelable {
         bluetooth_address=in.readString();
         //bluetooth_state=in.readInt();
         bluetooth_type=in.readInt();
-        bluetooth_rssi=in.readInt();
 
         meuDivece=in.readParcelable(BluetoothDevice.class.getClassLoader());
     }
@@ -237,7 +264,6 @@ public class BluetoothObject  implements Parcelable {
         out.writeString(bluetooth_address);
         //out.writeInt(bluetooth_state);
         out.writeInt(bluetooth_type);
-        out.writeInt(bluetooth_rssi);
         out.writeParcelable(meuDivece,0);
 
     }

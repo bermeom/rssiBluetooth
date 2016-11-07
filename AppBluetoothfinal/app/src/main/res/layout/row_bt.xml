@@ -57,7 +57,13 @@
             android:text="BT SIGNAL STRENGTH"
             android:textColor="#000000"
             />
-
+        <TextView
+            android:id="@+id/textview_bt_distance"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="BT DISTANCE"
+            android:textColor="#000000"
+            />
     </LinearLayout>
 
     <LinearLayout

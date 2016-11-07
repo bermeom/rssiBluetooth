@@ -2,6 +2,7 @@ package com.example.adminw7.appbluetoothfinal;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -54,6 +55,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         TextView bt_type = (TextView) rowView.findViewById(R.id.textview_bt_type);
         TextView bt_uuid = (TextView) rowView.findViewById(R.id.textview_bt_uuid);
         final TextView bt_signal_strength = (TextView) rowView.findViewById(R.id.textview_bt_signal_strength);
+        final TextView bt_distance = (TextView) rowView.findViewById(R.id.textview_bt_distance);
         final Button connectButton = (Button) rowView.findViewById(R.id.button);
         final ToggleButton normalToggleButton= (ToggleButton) rowView.findViewById(R.id.normal_button);
         final ToggleButton alertToggleButton= (ToggleButton) rowView.findViewById(R.id.alert_button);
@@ -61,7 +63,16 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         final Runnable rssiCallBack=new Runnable() {
             @Override
             public void run() {
+                double distance = Math.exp(((double)10*(1000*bluetoothObject.getAverage_rssi()-60969))/(double)82229);
                 bt_signal_strength.setText("RSSI: " + bluetoothObject.getBluetooth_rssi() + "dbm");
+                bt_distance.setText("DISTANCE: "+distance+" m");
+                if(distance>=20){
+                    bluetoothObject.sendData("AT+PIO21",context);
+                    bt_distance.setTextColor(Color.RED);
+                }else{
+                    bluetoothObject.sendData("AT+PIO20",context);
+                    bt_distance.setTextColor(Color.BLACK);
+                }
             }
 
         };
@@ -146,7 +157,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
             {
 
                 if(normalToggleButton.isChecked()){//off-on
-                    if(bluetoothObject.sendData("NORMAL-ON",context)) {
+                    if(bluetoothObject.sendData("AT+ADVI4",context)) {
                         normalToggleButton.setEnabled(false);
                         alertToggleButton.setEnabled(true);
                         alertToggleButton.setChecked(false);
@@ -173,7 +184,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
             {
 
                 if(alertToggleButton.isChecked()){//off-on
-                    if(bluetoothObject.sendData("ALERTA-ON",context)) {
+                    if(bluetoothObject.sendData("AT+ADVI2",context)) {
                         alertToggleButton.setEnabled(false);
                         normalToggleButton.setEnabled(true);
                         normalToggleButton.setChecked(false);
@@ -200,7 +211,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
             {
 
                 if(lowToggleButton.isChecked()){//off-on
-                    if(bluetoothObject.sendData("BAJO-ON",context)) {
+                    if(bluetoothObject.sendData("AT+ADVI7",context)) {
                         lowToggleButton.setEnabled(false);
                         alertToggleButton.setEnabled(true);
                         alertToggleButton.setChecked(false);
