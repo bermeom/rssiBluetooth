@@ -3,6 +3,10 @@ package com.example.adminw7.appbluetoothfinal;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.ParcelUuid;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -16,6 +20,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.logging.Handler;
@@ -35,13 +40,13 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         super(context, R.layout.row_bt, arrayOfAlreadyPairedDevices);
         this.context = context;
         this.arrayOfAlreadyPairedDevices = arrayOfAlreadyPairedDevices;
+
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent)
     {
         final BluetoothObject bluetoothObject = arrayOfAlreadyPairedDevices.get(position);
-
         // 1. Create Inflater
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
@@ -51,9 +56,9 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         // 3. Get the widgets from the rowView
         TextView bt_name = (TextView) rowView.findViewById(R.id.textview_bt_name);
         TextView bt_address = (TextView) rowView.findViewById(R.id.textview_bt_address);
-        TextView bt_bondState = (TextView) rowView.findViewById(R.id.textview_bt_state);
+
         TextView bt_type = (TextView) rowView.findViewById(R.id.textview_bt_type);
-        TextView bt_uuid = (TextView) rowView.findViewById(R.id.textview_bt_uuid);
+        //TextView bt_uuid = (TextView) rowView.findViewById(R.id.textview_bt_uuid);
         final TextView bt_signal_strength = (TextView) rowView.findViewById(R.id.textview_bt_signal_strength);
         final TextView bt_distance = (TextView) rowView.findViewById(R.id.textview_bt_distance);
         final Button connectButton = (Button) rowView.findViewById(R.id.button);
@@ -63,15 +68,20 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         final Runnable rssiCallBack=new Runnable() {
             @Override
             public void run() {
-                double distance = Math.exp(((double)10*(1000*bluetoothObject.getAverage_rssi()-60969))/(double)82229);
+                double distance =Math.exp(((double)10*(-1000*bluetoothObject.getAverage_rssi()-60969))/(double)82229);
+                distance=(double) ((int)(distance*1000))/1000;
                 bt_signal_strength.setText("RSSI: " + bluetoothObject.getBluetooth_rssi() + "dbm");
                 bt_distance.setText("DISTANCE: "+distance+" m");
                 if(distance>=20){
                     bluetoothObject.sendData("AT+PIO21",context);
                     bt_distance.setTextColor(Color.RED);
+                    Toast.makeText(context, "PITANDO " + bluetoothObject.getBluetooth_name(), Toast.LENGTH_SHORT).show();
+                    bluetoothObject.playAlarm();
+                    //bt_distance.setSoundEffectsEnabled(true);
                 }else{
                     bluetoothObject.sendData("AT+PIO20",context);
                     bt_distance.setTextColor(Color.BLACK);
+                    bluetoothObject.stopAlarm();
                 }
             }
 
@@ -128,7 +138,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
                                     }catch (Exception  e){
                                         Log.d("Button", "ERROR -> "+e);
                                     }
-                                    boolean replay =bluetoothObject.sendData("NORMAL-ON", context);
+                                    boolean replay =bluetoothObject.sendData("AT+ADVI4", context);
                                     bluetoothObject.setState(1);
                                     Toast.makeText(context, "Connectado " + bluetoothObject.getBluetooth_name(), Toast.LENGTH_SHORT).show();
                                 }
@@ -158,6 +168,8 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
 
                 if(normalToggleButton.isChecked()){//off-on
                     if(bluetoothObject.sendData("AT+ADVI4",context)) {
+                        bluetoothObject.sendData("AT+PIO21",context);
+                        //bluetoothObject.sendData("AT+PIO20",context);
                         normalToggleButton.setEnabled(false);
                         alertToggleButton.setEnabled(true);
                         alertToggleButton.setChecked(false);
@@ -185,6 +197,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
 
                 if(alertToggleButton.isChecked()){//off-on
                     if(bluetoothObject.sendData("AT+ADVI2",context)) {
+                        bluetoothObject.sendData("AT+PIO21",context);
                         alertToggleButton.setEnabled(false);
                         normalToggleButton.setEnabled(true);
                         normalToggleButton.setChecked(false);
@@ -212,6 +225,7 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
 
                 if(lowToggleButton.isChecked()){//off-on
                     if(bluetoothObject.sendData("AT+ADVI7",context)) {
+                        bluetoothObject.sendData("AT+PIO21",context);
                         lowToggleButton.setEnabled(false);
                         alertToggleButton.setEnabled(true);
                         alertToggleButton.setChecked(false);
@@ -219,6 +233,8 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
                         normalToggleButton.setChecked(false);
                         bluetoothObject.setState(3);
                         Toast.makeText(context, "BAJO " + bluetoothObject.getBluetooth_name(), Toast.LENGTH_SHORT).show();
+
+
                     }else{
                         lowToggleButton.setChecked(false);
                     }
@@ -253,12 +269,11 @@ public class AlreadyPairedAdapter extends ArrayAdapter<BluetoothObject>
         }
         bt_name.setText(bluetoothObject.getBluetooth_name());
         bt_address.setText("address: \n" + bluetoothObject.getBluetooth_address());
-        bt_bondState.setText("state: " + bluetoothObject.getBluetooth_state());
         bt_type.setText("type: " + bluetoothObject.getBluetooth_type());
         bt_signal_strength.setText("RSSI: " + bluetoothObject.getBluetooth_rssi() + "dbm");
         ParcelUuid uuid[] = bluetoothObject.getBluetooth_uuids();
         if (uuid != null) {
-            bt_uuid.setText("uuid \n" + uuid[0]);
+            //bt_uuid.setText("uuid \n" + uuid[0]);
             //bt_uuid.setTextSize(TypedValue.COMPLEX_UNIT_SP,8);
         }
         // 5. return rowView

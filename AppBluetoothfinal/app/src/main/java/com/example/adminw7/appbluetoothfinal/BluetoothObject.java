@@ -9,6 +9,9 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.ParcelUuid;
@@ -47,10 +50,14 @@ public class BluetoothObject  implements Parcelable {
     protected int state;//0 none, 1 normal, 2 alter , 3 low
     protected Context context;
     protected Runnable rssiUpadateCallback;
+    protected Ringtone ringtone;
     // Parcelable stuff
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public BluetoothObject()
     {
+
+        this.ringtone=null;
+        this.context=null;
         this.state=0;
         this.connection_state=BluetoothEnumerationObject.DISCONNECTED;
         this.bluetooth_rssi=new int[10];
@@ -97,6 +104,20 @@ public class BluetoothObject  implements Parcelable {
         this.bluetooth_address = bluetooth_address;
     }
 
+    public void playAlarm(){
+        if(ringtone==null && context!=null) {
+            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            ringtone = RingtoneManager.getRingtone(context, notification);
+        }
+        if(ringtone!=null){
+            this.ringtone.play();
+        }
+    }
+    public void stopAlarm(){
+        if(ringtone!=null){
+            this.ringtone.play();
+        }
+    }
     public int getBluetooth_state() {
         return bluetooth_state;
     }
