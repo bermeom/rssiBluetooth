@@ -115,7 +115,7 @@ public class BluetoothObject  implements Parcelable {
     }
     public void stopAlarm(){
         if(ringtone!=null){
-            this.ringtone.play();
+            this.ringtone.stop();
         }
     }
     public int getBluetooth_state() {

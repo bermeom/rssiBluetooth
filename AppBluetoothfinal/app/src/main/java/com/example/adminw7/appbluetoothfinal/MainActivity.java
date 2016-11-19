@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     public static Map<String, BluetoothObject> mapBTDevices;
     public static int delayMillis=2000;
     private final static int REQUEST_ENABLE_BT = 1;
+    //protected Ringtone ringtone;
+
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -66,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
-
+        //Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        //ringtone = RingtoneManager.getRingtone(getApplicationContext(), notification);
 
     }
 
@@ -77,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         MainActivity.delayMillis=2000;
         Intent intent = new Intent(this, MainActivityListConnectionsDevices.class);
         startActivity(intent);
+        //this.ringtone.play();
     }
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     public void OnClickListenerModo2(View view) {
